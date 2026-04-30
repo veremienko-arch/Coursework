@@ -32,6 +32,8 @@ private:
 
     bool ifCoordValid(int x, int y) const;
     bool nodeRules(int x, int y);
+    bool blackRules(int x, int y);
+    bool whiteRules(int x, int y);
     void saveState();
     void restoreState();
     void applyRules();
@@ -43,6 +45,7 @@ public:
     void setCircleType(int x,  int y, CircleType type);
     void setLineStatus(int x, int y, Direction dir, LineStat status);
 
+    //Qt
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     CircleType getCircleType(int x, int y) const;
@@ -209,14 +212,113 @@ bool CourseworkMasyu::nodeRules(int x, int y) {
             changed = true;
         }
     }
-
     return changed;
 }
 
+bool CourseworkMasyu::blackRules(int x, int y) {
+    bool changed = false;
+    if (grid[y][x].up == LineStat::UNKNOWN) {
+        if (!ifCoordValid(x, y-1) || grid[y-1][x].up == LineStat::EMPTY) {
+            setLineStatus(x, y, Direction::UP, LineStat::EMPTY);
+            changed = true;
+        }
+    }
+    if (grid[y][x].right == LineStat::UNKNOWN) {
+        if (!ifCoordValid(x+1, y) || grid[y][x+1].right == LineStat::EMPTY) {
+            setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY);
+            changed = true;
+        }
+    }
+    if (grid[y][x].down == LineStat::UNKNOWN) {
+        if (!ifCoordValid(x, y+1) || grid[y+1][x].down == LineStat::EMPTY) {
+            setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY);
+            changed = true;
+        }
+    }
+    if (grid[y][x].left == LineStat::UNKNOWN) {
+        if (!ifCoordValid(x-1, y) || grid[y][x-1].left == LineStat::EMPTY) {
+            setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY);
+            changed = true;
+        }
+    }
+    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::UNKNOWN) { grid[y][x].down = LineStat::EMPTY; changed = true; }
+    if (grid[y][x].right == LineStat::LINE && grid[y][x].left == LineStat::UNKNOWN) { grid[y][x].left = LineStat::EMPTY; changed = true; }
+    if (grid[y][x].down == LineStat::LINE && grid[y][x].up == LineStat::UNKNOWN) { grid[y][x].up = LineStat::EMPTY; changed = true; }
+    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::UNKNOWN) { grid[y][x].right = LineStat::EMPTY; changed = true; }
 
+    if (grid[y][x].up == LineStat::LINE && ifCoordValid(x, y-1)) {
+        if (grid[y-1][x].up == LineStat::UNKNOWN) {
+            setLineStatus(x, y-1, Direction::UP, LineStat::LINE);
+            changed = true;
+        }
+    }
+    if (grid[y][x].right == LineStat::LINE && ifCoordValid(x+1, y)) {
+        if (grid[y][x+1].right == LineStat::UNKNOWN) {
+            setLineStatus(x+1, y, Direction::RIGHT, LineStat::LINE);
+            changed = true;
+        }
+    }
+    if (grid[y][x].down == LineStat::LINE && ifCoordValid(x, y+1)) {
+        if (grid[y+1][x].down == LineStat::UNKNOWN) {
+            setLineStatus(x, y+1, Direction::DOWN, LineStat::LINE);
+            changed = true;
+        }
+    }
+    if (grid[y][x].left == LineStat::LINE && ifCoordValid(x-1, y)) {
+        if (grid[y][x-1].left == LineStat::UNKNOWN) {
+            setLineStatus(x-1, y, Direction::LEFT, LineStat::LINE);
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+bool CourseworkMasyu::whiteRules(int x, int y) {
+    bool changed = false;
+    if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE) {
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+    } else if (grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) {
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
+    }
+    if (grid[y][x].up == LineStat::EMPTY || grid[y][x].down == LineStat::EMPTY) {
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+    }
+    if (grid[y][x].left == LineStat::EMPTY || grid[y][x].right == LineStat::EMPTY) {
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+    }
+    return changed;
+}
 
 void CourseworkMasyu::applyRules() {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (nodeRules(x, y)) changed = true;
 
+                if (grid[y][x].circle == CircleType::WHITE) {
+                    if (whiteRules(x, y)) changed = true;
+                } else if (grid[y][x].circle == CircleType::BLACK) {
+                    if (blackRules(x, y)) changed = true;
+                }
+            }
+        }
+    }
+}
+
+bool CourseworkMasyu::solve() {
+    applyRules();
+
+    return true;
 }
 
 int main() {
@@ -251,7 +353,7 @@ int main() {
     field1.setCircleType(11, 9, CircleType::WHITE);
 
     cout << "Current grid  of Ex. #1 (unsolved):" << endl;
-
+    field1.solve();
     field1.printToConsole();
 
     return 0;
