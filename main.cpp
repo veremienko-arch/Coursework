@@ -59,6 +59,15 @@ CourseworkMasyu::CourseworkMasyu(int x, int y) {
     width = x;
     height = y;
     grid.resize(height, std::vector<Node>(width));
+
+    for (int rows = 0; rows < height; rows++) {
+        grid[rows][0].left = LineStat::EMPTY;
+        grid[rows][width-1].right = LineStat::EMPTY;
+    }
+    for (int cols = 0; cols < width; cols++) {
+        grid[0][cols].up = LineStat::EMPTY;
+        grid[height-1][cols].down = LineStat::EMPTY;
+    }
 }
 
 void CourseworkMasyu::setCircleType(int x, int y, CircleType type) {
@@ -157,61 +166,32 @@ bool CourseworkMasyu::nodeRules(int x, int y) {
     }
 
     if (lines == 2 && unknowns > 0) {
-        if (grid[y][x].up == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::UP, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].right == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].down == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].left == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY);
-            changed = true;
-        }
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
     }
-
     if (lines == 1 && unknowns == 1) {
-        if (grid[y][x].up == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::UP, LineStat::LINE);
-            changed = true;
-        }
-        if (grid[y][x].right == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::RIGHT, LineStat::LINE);
-            changed = true;
-        }
-        if (grid[y][x].down == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::DOWN, LineStat::LINE);
-            changed = true;
-        }
-        if (grid[y][x].left == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::LEFT, LineStat::LINE);
-            changed = true;
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) {  setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
+    }
+    if (lines == 0 && unknowns == 1) {
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+    }
+    if (grid[y][x].circle != CircleType::EMPTY) {
+        if (lines + unknowns == 2 && unknowns > 0) {
+            if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+            if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+            if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
+            if (grid[y][x].left == LineStat::UNKNOWN) {  setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
         }
     }
 
-    if (lines == 0 && unknowns == 1) {
-        if (grid[y][x].up == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::UP, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].right == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].down == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY);
-            changed = true;
-        }
-        if (grid[y][x].left == LineStat::UNKNOWN) {
-            setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY);
-            changed = true;
-        }
-    }
     return changed;
 }
 
@@ -270,6 +250,12 @@ bool CourseworkMasyu::blackRules(int x, int y) {
             changed = true;
         }
     }
+
+    if (grid[y][x].up ==  LineStat::EMPTY && grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
+    if (grid[y][x].right ==  LineStat::EMPTY && grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
+    if (grid[y][x].down ==  LineStat::EMPTY && grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+    if (grid[y][x].left ==  LineStat::EMPTY && grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+
     return changed;
 }
 
@@ -289,10 +275,42 @@ bool CourseworkMasyu::whiteRules(int x, int y) {
     if (grid[y][x].up == LineStat::EMPTY || grid[y][x].down == LineStat::EMPTY) {
         if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
         if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
     }
     if (grid[y][x].left == LineStat::EMPTY || grid[y][x].right == LineStat::EMPTY) {
+        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
         if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
         if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+    }
+    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE) {
+        if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::LINE) {
+            if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::UNKNOWN) {
+                setLineStatus(x+1, y, Direction::RIGHT, LineStat::EMPTY);
+                changed = true;
+            }
+        }
+        if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::LINE) {
+            if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::UNKNOWN) {
+                setLineStatus(x-1, y, Direction::LEFT, LineStat::EMPTY);
+                changed = true;
+            }
+        }
+    }
+    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) {
+        if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::LINE) {
+            if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::UNKNOWN) {
+                setLineStatus(x, y+1, Direction::DOWN, LineStat::EMPTY);
+                changed = true;
+            }
+        }
+        if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::LINE) {
+            if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::UNKNOWN) {
+                setLineStatus(x, y-1, Direction::UP, LineStat::EMPTY);
+                changed = true;
+            }
+        }
     }
     return changed;
 }
