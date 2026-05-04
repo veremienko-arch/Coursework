@@ -5,7 +5,7 @@ using std::cout;
 using std::endl;
 
 enum class Direction {
-    UP, DOWN, RIGHT, LEFT
+    UP, DOWN, RIGHT, LEFT, NONE
 };
 
 enum class CircleType {
@@ -39,6 +39,7 @@ private:
     void applyRules();
     bool backtrack();
     bool ifLoopComplete() const;
+    bool ifValid() const;
 
 public:
     CourseworkMasyu(int x, int y);
@@ -339,11 +340,116 @@ bool CourseworkMasyu::solve() {
     return true;
 }
 
+bool CourseworkMasyu::ifValid() const {
+    int l = 0;
+    int u = 0;
+
+    for (int  y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (grid[y][x].up == LineStat::LINE) {
+                l++;
+            } else if (grid[y][x].up == LineStat::UNKNOWN) {
+                u++;
+            }
+            if (grid[y][x].right == LineStat::LINE) {
+                l++;
+            } else if (grid[y][x].right == LineStat::UNKNOWN) {
+                u++;
+            }
+            if (grid[y][x].down == LineStat::LINE) {
+                l++;
+            } else if (grid[y][x].down == LineStat::UNKNOWN) {
+                u++;
+            }
+            if (grid[y][x].left == LineStat::LINE) {
+                l++;
+            } else if (grid[y][x].left == LineStat::UNKNOWN) {
+                u++;
+            }
+
+            if (l > 2) return false;
+            if (l == 1 && u == 0) return false;
+            if (grid[y][x].circle != CircleType::EMPTY) {
+                if (l + u < 2) return false;
+            }
+        }
+    }
+    return true;
+}
+
+void CourseworkMasyu::saveState() {
+    history.push_back(grid);
+}
+
+void CourseworkMasyu::restoreState() {
+    grid = history.back();
+    history.pop_back();
+}
+
+bool CourseworkMasyu::ifLoopComplete() const {
+    int cir = 0;
+    int cellWithLine = 0;
+    int sX = -1;
+    int sY = -1;
+    int currX = -1;
+    int currY = -1;
+    int pathLen = 0;
+    int cirCount = 0;
+    bool found = false;
+    bool ifFirstStep = true;
+    Direction cameFrom = Direction::NONE;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (grid[y][x].circle == CircleType::WHITE || grid[y][x].circle == CircleType::BLACK) cir++;
+            if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE || grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) cellWithLine++;
+        }
+    }
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE || grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) {
+                sX = x;
+                sY = y;
+                found = true;
+                break;
+            }
+        }
+        if (found) break;
+    }
+    if (sX == -1 || sY == -1) return false;
+
+    currX = sX;
+    currY = sY;
+    while (true) {
+        pathLen++;
+        if (grid[currY][currX].circle != CircleType::EMPTY) cirCount++;
+        if (grid[currY][currX].up == LineStat::LINE && (ifFirstStep || cameFrom != Direction::UP)) {
+            currY = currY-1;
+            cameFrom = Direction::DOWN;
+        } else if (grid[currY][currX].down == LineStat::LINE && (ifFirstStep || cameFrom != Direction::DOWN)) {
+            currY = currY+1;
+            cameFrom = Direction::UP;
+        } else if (grid[currY][currX].right == LineStat::LINE && (ifFirstStep || cameFrom != Direction::RIGHT)) {
+            currX = currX+1;
+            cameFrom = Direction::LEFT;
+        } else if (grid[currY][currX].left == LineStat::LINE && (ifFirstStep || cameFrom != Direction::LEFT)) {
+            currX = currX-1;
+            cameFrom = Direction::RIGHT;
+        } else {
+            return false;
+        }
+        ifFirstStep = false;
+        if (currX == sX && currY == sY) break;
+    }
+    if (pathLen != cellWithLine || cirCount != cir) return false;
+    return true;
+}
+
 int main() {
     int w = 14;
     int h = 10;
     CourseworkMasyu field1(w, h);
-
+    //Ex. 1
     field1.setCircleType(4, 0, CircleType::WHITE);
     field1.setCircleType(7, 0, CircleType::BLACK);
     field1.setCircleType(2, 2, CircleType::WHITE);
@@ -370,7 +476,7 @@ int main() {
     field1.setCircleType(2, 9, CircleType::WHITE);
     field1.setCircleType(11, 9, CircleType::WHITE);
 
-    cout << "Current grid  of Ex. #1 (unsolved):" << endl;
+    cout << "Current grid of Ex. #1 (unsolved):" << endl;
     field1.solve();
     field1.printToConsole();
 
