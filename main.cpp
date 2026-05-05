@@ -222,10 +222,10 @@ bool CourseworkMasyu::blackRules(int x, int y) {
             changed = true;
         }
     }
-    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::UNKNOWN) { grid[y][x].down = LineStat::EMPTY; changed = true; }
-    if (grid[y][x].right == LineStat::LINE && grid[y][x].left == LineStat::UNKNOWN) { grid[y][x].left = LineStat::EMPTY; changed = true; }
-    if (grid[y][x].down == LineStat::LINE && grid[y][x].up == LineStat::UNKNOWN) { grid[y][x].up = LineStat::EMPTY; changed = true; }
-    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::UNKNOWN) { grid[y][x].right = LineStat::EMPTY; changed = true; }
+    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+    if (grid[y][x].right == LineStat::LINE && grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+    if (grid[y][x].down == LineStat::LINE && grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
 
     if (grid[y][x].up == LineStat::LINE && ifCoordValid(x, y-1)) {
         if (grid[y-1][x].up == LineStat::UNKNOWN) {
@@ -335,17 +335,18 @@ void CourseworkMasyu::applyRules() {
 }
 
 bool CourseworkMasyu::solve() {
-    applyRules();
-
-    return true;
+    return backtrack();
 }
 
 bool CourseworkMasyu::ifValid() const {
-    int l = 0;
-    int u = 0;
+    //int totEnds = 0;
+    //int totLines = 0;
 
     for (int  y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
+            int l = 0;
+            int u = 0;
+
             if (grid[y][x].up == LineStat::LINE) {
                 l++;
             } else if (grid[y][x].up == LineStat::UNKNOWN) {
@@ -372,8 +373,20 @@ bool CourseworkMasyu::ifValid() const {
             if (grid[y][x].circle != CircleType::EMPTY) {
                 if (l + u < 2) return false;
             }
+
+            if (l==2) {
+                bool strt = (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) || (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE);
+                if (grid[y][x].circle == CircleType::WHITE && !strt) return false;
+                if (grid[y][x].circle == CircleType::BLACK && strt) return false;
+            }
+            //if (l == 1) totEnds++;
+            //if (l > 0) totLines++;
         }
     }
+    //if (totLines > 0 && totEnds == 0) {
+    //    if (!ifLoopComplete()) return false;
+    //}
+
     return true;
 }
 
@@ -445,10 +458,70 @@ bool CourseworkMasyu::ifLoopComplete() const {
     return true;
 }
 
+bool CourseworkMasyu::backtrack() {
+    applyRules();
+    if (!ifValid()) return false;
+    if (ifLoopComplete()) return true;
+
+    int gX = -1;
+    int gY = -1;
+    Direction gDir = Direction::NONE;
+    int minSc = 1000;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int u = 0;
+            int l = 0;
+
+            if (grid[y][x].up == LineStat::UNKNOWN) u++;
+            else if (grid[y][x].up == LineStat::LINE) l++;
+            if (grid[y][x].right == LineStat::UNKNOWN) u++;
+            else if (grid[y][x].right == LineStat::LINE) l++;
+            if (grid[y][x].down == LineStat::UNKNOWN) u++;
+            else if (grid[y][x].down == LineStat::LINE) l++;
+            if (grid[y][x].left == LineStat::UNKNOWN) u++;
+            else if (grid[y][x].left == LineStat::LINE) l++;
+
+            if (u > 0) {
+                int score = u;
+                if (grid[y][x].circle != CircleType::EMPTY) {
+                    score -= 10;
+                } else if (l > 0) {
+                        score -= 5;
+                }
+                if (score < minSc) {
+                    minSc = score;
+                    gX = x; gY = y;
+
+                    if (grid[y][x].up == LineStat::UNKNOWN) gDir = Direction::UP;
+                    else if (grid[y][x].right == LineStat::UNKNOWN) gDir = Direction::RIGHT;
+                    else if (grid[y][x].down == LineStat::UNKNOWN) gDir = Direction::DOWN;
+                    else if (grid[y][x].left == LineStat::UNKNOWN) gDir = Direction::LEFT;
+                }
+            }
+        }
+    }
+
+    if (gX == -1 || gY == -1) return false;
+    saveState();
+    setLineStatus(gX, gY, gDir, LineStat::LINE);
+    if (backtrack()) return true;
+    restoreState();
+
+    saveState();
+    setLineStatus(gX, gY, gDir, LineStat::EMPTY);
+    if (backtrack()) return true;
+    restoreState();
+
+    return false;
+}
+
 int main() {
     int w = 14;
     int h = 10;
     CourseworkMasyu field1(w, h);
+    CourseworkMasyu field2(w, h);
+    CourseworkMasyu field3(w, h);
     //Ex. 1
     field1.setCircleType(4, 0, CircleType::WHITE);
     field1.setCircleType(7, 0, CircleType::BLACK);
@@ -476,9 +549,96 @@ int main() {
     field1.setCircleType(2, 9, CircleType::WHITE);
     field1.setCircleType(11, 9, CircleType::WHITE);
 
-    cout << "Current grid of Ex. #1 (unsolved):" << endl;
+    cout << "Ex. #1:" << endl;
     field1.solve();
     field1.printToConsole();
+    cout << "\n" << endl;
+
+    //Ex. 2
+    field2.setCircleType(2, 0, CircleType::WHITE);
+    field2.setCircleType(4, 0, CircleType::BLACK);
+    field2.setCircleType(8, 0, CircleType::BLACK);
+    field2.setCircleType(10, 0, CircleType::WHITE);
+    field2.setCircleType(1, 1, CircleType::WHITE);
+    field2.setCircleType(6, 1, CircleType::WHITE);
+    field2.setCircleType(11, 1, CircleType::BLACK);
+    field2.setCircleType(12, 1, CircleType::WHITE);
+    field2.setCircleType(1, 2, CircleType::BLACK);
+    field2.setCircleType(6, 2, CircleType::WHITE);
+    field2.setCircleType(8, 2, CircleType::BLACK);
+    field2.setCircleType(5, 3, CircleType::WHITE);
+    field2.setCircleType(7, 3, CircleType::WHITE);
+    field2.setCircleType(8, 3, CircleType::BLACK);
+    field2.setCircleType(10, 3, CircleType::WHITE);
+    field2.setCircleType(11, 3, CircleType::BLACK);
+    field2.setCircleType(0, 4, CircleType::WHITE);
+    field2.setCircleType(1, 4, CircleType::WHITE);
+    field2.setCircleType(2, 4, CircleType::WHITE);
+    field2.setCircleType(5, 4, CircleType::WHITE);
+    field2.setCircleType(6, 4, CircleType::WHITE);
+    field2.setCircleType(2, 5, CircleType::WHITE);
+    field2.setCircleType(7, 5, CircleType::WHITE);
+    field2.setCircleType(8, 5, CircleType::WHITE);
+    field2.setCircleType(11, 5, CircleType::WHITE);
+    field2.setCircleType(13, 5, CircleType::BLACK);
+    field2.setCircleType(1, 6, CircleType::WHITE);
+    field2.setCircleType(3, 6, CircleType::WHITE);
+    field2.setCircleType(4, 6, CircleType::WHITE);
+    field2.setCircleType(7, 6, CircleType::WHITE);
+    field2.setCircleType(8, 6, CircleType::BLACK);
+    field2.setCircleType(11, 6, CircleType::WHITE);
+    field2.setCircleType(13, 6, CircleType::WHITE);
+    field2.setCircleType(2, 7, CircleType::WHITE);
+    field2.setCircleType(10, 7, CircleType::WHITE);
+    field2.setCircleType(12, 7, CircleType::WHITE);
+    field2.setCircleType(2, 8, CircleType::WHITE);
+    field2.setCircleType(3, 8, CircleType::WHITE);
+    field2.setCircleType(5, 9, CircleType::WHITE);
+    field2.setCircleType(6, 9, CircleType::BLACK);
+    field2.setCircleType(9, 9, CircleType::BLACK);
+    field2.setCircleType(12, 9, CircleType::WHITE);
+
+    cout << "Ex. #2:" << endl;
+    field2.solve();
+    field2.printToConsole();
+    cout << "\n" << endl;
+
+    //Ex. 3
+    field3.setCircleType(5, 0, CircleType::WHITE);
+    field3.setCircleType(10, 0, CircleType::BLACK);
+    field3.setCircleType(0, 1, CircleType::WHITE);
+    field3.setCircleType(1, 1, CircleType::WHITE);
+    field3.setCircleType(5, 1, CircleType::WHITE);
+    field3.setCircleType(8, 1, CircleType::WHITE);
+    field3.setCircleType(9, 1, CircleType::WHITE);
+    field3.setCircleType(2, 2, CircleType::WHITE);
+    field3.setCircleType(11, 2, CircleType::WHITE);
+    field3.setCircleType(13, 2, CircleType::WHITE);
+    field3.setCircleType(2, 3, CircleType::WHITE);
+    field3.setCircleType(5, 3, CircleType::WHITE);
+    field3.setCircleType(6, 3, CircleType::WHITE);
+    field3.setCircleType(9, 3, CircleType::WHITE);
+    field3.setCircleType(0, 4, CircleType::WHITE);
+    field3.setCircleType(2, 4, CircleType::WHITE);
+    field3.setCircleType(11, 4, CircleType::BLACK);
+    field3.setCircleType(9, 5, CircleType::BLACK);
+    field3.setCircleType(10, 5, CircleType::BLACK);
+    field3.setCircleType(2, 6, CircleType::WHITE);
+    field3.setCircleType(4, 6, CircleType::BLACK);
+    field3.setCircleType(6, 6, CircleType::BLACK);
+    field3.setCircleType(7, 6, CircleType::WHITE);
+    field3.setCircleType(1, 7, CircleType::WHITE);
+    field3.setCircleType(4, 7, CircleType::BLACK);
+    field3.setCircleType(2, 8, CircleType::WHITE);
+    field3.setCircleType(12, 8, CircleType::BLACK);
+    field3.setCircleType(0, 9, CircleType::BLACK);
+    field3.setCircleType(6, 9, CircleType::WHITE);
+    field3.setCircleType(8, 9, CircleType::BLACK);
+    field3.setCircleType(11, 9, CircleType::WHITE);
+
+    cout << "Ex. #3:" << endl;
+    field3.solve();
+    field3.printToConsole();
 
     return 0;
 }
