@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <limits>
 
 using std::cout;
 using std::endl;
@@ -45,12 +46,6 @@ public:
     CourseworkMasyu(int x, int y);
     void setCircleType(int x,  int y, CircleType type);
     void setLineStatus(int x, int y, Direction dir, LineStat status);
-
-    //Qt
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-    CircleType getCircleType(int x, int y) const;
-    LineStat getLine(int  x, int y, Direction dir) const;
 
     bool solve();
     void printToConsole() const;
@@ -152,18 +147,22 @@ bool CourseworkMasyu::nodeRules(int x, int y) {
     switch (grid[y][x].up) {
         case LineStat::LINE: lines++; break;
         case LineStat::UNKNOWN: unknowns++; break;
+        default: break;
     }
     switch (grid[y][x].right) {
         case LineStat::LINE: lines++; break;
         case LineStat::UNKNOWN: unknowns++; break;
+        default: break;
     }
     switch (grid[y][x].down) {
         case LineStat::LINE: lines++; break;
         case LineStat::UNKNOWN: unknowns++; break;
+        default: break;
     }
     switch (grid[y][x].left) {
         case LineStat::LINE: lines++; break;
         case LineStat::UNKNOWN: unknowns++; break;
+        default: break;
     }
 
     if (lines == 2 && unknowns > 0) {
@@ -339,9 +338,6 @@ bool CourseworkMasyu::solve() {
 }
 
 bool CourseworkMasyu::ifValid() const {
-    //int totEnds = 0;
-    //int totLines = 0;
-
     for (int  y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int l = 0;
@@ -374,18 +370,13 @@ bool CourseworkMasyu::ifValid() const {
                 if (l + u < 2) return false;
             }
 
-            if (l==2) {
+            if (l == 2) {
                 bool strt = (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) || (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE);
                 if (grid[y][x].circle == CircleType::WHITE && !strt) return false;
                 if (grid[y][x].circle == CircleType::BLACK && strt) return false;
             }
-            //if (l == 1) totEnds++;
-            //if (l > 0) totLines++;
         }
     }
-    //if (totLines > 0 && totEnds == 0) {
-    //    if (!ifLoopComplete()) return false;
-    //}
 
     return true;
 }
@@ -522,7 +513,9 @@ int main() {
     CourseworkMasyu field1(w, h);
     CourseworkMasyu field2(w, h);
     CourseworkMasyu field3(w, h);
-    //Ex. 1
+
+    cout << "Welcome to the Masyu crossword solver!" << endl;
+    //Field #1
     field1.setCircleType(4, 0, CircleType::WHITE);
     field1.setCircleType(7, 0, CircleType::BLACK);
     field1.setCircleType(2, 2, CircleType::WHITE);
@@ -549,12 +542,7 @@ int main() {
     field1.setCircleType(2, 9, CircleType::WHITE);
     field1.setCircleType(11, 9, CircleType::WHITE);
 
-    cout << "Ex. #1:" << endl;
-    field1.solve();
-    field1.printToConsole();
-    cout << "\n" << endl;
-
-    //Ex. 2
+    //Field #2
     field2.setCircleType(2, 0, CircleType::WHITE);
     field2.setCircleType(4, 0, CircleType::BLACK);
     field2.setCircleType(8, 0, CircleType::BLACK);
@@ -598,12 +586,7 @@ int main() {
     field2.setCircleType(9, 9, CircleType::BLACK);
     field2.setCircleType(12, 9, CircleType::WHITE);
 
-    cout << "Ex. #2:" << endl;
-    field2.solve();
-    field2.printToConsole();
-    cout << "\n" << endl;
-
-    //Ex. 3
+    //Field #3
     field3.setCircleType(5, 0, CircleType::WHITE);
     field3.setCircleType(10, 0, CircleType::BLACK);
     field3.setCircleType(0, 1, CircleType::WHITE);
@@ -636,9 +619,49 @@ int main() {
     field3.setCircleType(8, 9, CircleType::BLACK);
     field3.setCircleType(11, 9, CircleType::WHITE);
 
-    cout << "Ex. #3:" << endl;
-    field3.solve();
-    field3.printToConsole();
+    cout << "Select field:" << endl;
+    char ch;
+    while (true) {
+        cout << "1. Field #1\n2. Field #2\n3. Field #3\n4. Show all.\n5.Exit." << endl;
+        cout << "Enter: ";
+        std::cin >> ch;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        switch (ch) {
+            case '1':
+                cout << "Field #1:" << endl;
+                field1.solve();
+                field1.printToConsole();
+                break;
+            case '2':
+                cout << "Field #2:" << endl;
+                field2.solve();
+                field2.printToConsole();
+                break;
+            case '3':
+                cout << "Field #3:" << endl;
+                field3.solve();
+                field3.printToConsole();
+                break;
+            case '4':
+                cout << "Field #1:" << endl;
+                field1.solve();
+                field1.printToConsole();
+                cout << "\n" << endl;
+                cout << "Field #2:" << endl;
+                field2.solve();
+                field2.printToConsole();
+                cout << "\n" << endl;
+                cout << "Field #3:" << endl;
+                field3.solve();
+                field3.printToConsole();
+                break;
+            case '5':
+                return 0;
+            default:
+                cout << "Error! Choose between 1, 2, 3, 4 and 5!" << endl;
+                break;
+        }
+    }
 
     return 0;
 }
