@@ -28,9 +28,9 @@ struct Node {
 class CourseworkMasyu {
 private:
     int width, height;
-    std::vector<std::vector<Node>> grid;
-    std::vector<std::vector<std::vector<Node>>> history;
-
+    std::vector<std::vector<Node>> grid; //Grid graph
+    std::vector<std::vector<std::vector<Node>>> history; //History for rolling back grid version (needs for backtrack)
+    //Function prototypes
     bool ifCoordValid(int x, int y) const;
     bool nodeRules(int x, int y);
     bool blackRules(int x, int y);
@@ -51,7 +51,7 @@ public:
     void printToConsole() const;
 };
 
-CourseworkMasyu::CourseworkMasyu(int x, int y) {
+CourseworkMasyu::CourseworkMasyu(int x, int y) { //Constructor for a grid size
     width = x;
     height = y;
     grid.resize(height, std::vector<Node>(width));
@@ -66,12 +66,12 @@ CourseworkMasyu::CourseworkMasyu(int x, int y) {
     }
 }
 
-void CourseworkMasyu::setCircleType(int x, int y, CircleType type) {
+void CourseworkMasyu::setCircleType(int x, int y, CircleType type) { //Correctly and safely sets circle type
     grid[y][x].circle = type;
 }
 
-void CourseworkMasyu::printToConsole() const {
-    cout << std::string(53, '-') << endl;
+void CourseworkMasyu::printToConsole() const { //Prints grid to a console
+    cout << std::string(width * 4 - 3, '-') << endl;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             switch (grid[y][x].circle) {
@@ -99,14 +99,14 @@ void CourseworkMasyu::printToConsole() const {
             cout << endl;
         }
     }
-    cout << std::string(53, '-') << endl;
+    cout << std::string(width * 4 - 3, '-') << endl;
 }
 
-bool CourseworkMasyu::ifCoordValid(int x, int y) const {
+bool CourseworkMasyu::ifCoordValid(int x, int y) const { //Checks if coords is valid
     return x >= 0 && x < width && y >= 0 && y < height;
 }
 
-void CourseworkMasyu::setLineStatus(int x, int y, Direction dir, LineStat status) {
+void CourseworkMasyu::setLineStatus(int x, int y, Direction dir, LineStat status) { //Correctly and safely sets line status
     if (!ifCoordValid(x, y)) return;
 
     switch (dir) {
@@ -118,7 +118,7 @@ void CourseworkMasyu::setLineStatus(int x, int y, Direction dir, LineStat status
     }
 
     int nx = x, ny = y;
-    Direction oppositeDirection;
+    Direction oppositeDirection = Direction::NONE;
 
     switch (dir) {
         case Direction::UP: ny = y - 1; oppositeDirection = Direction::DOWN; break;
@@ -139,52 +139,40 @@ void CourseworkMasyu::setLineStatus(int x, int y, Direction dir, LineStat status
     }
 }
 
-bool CourseworkMasyu::nodeRules(int x, int y) {
-    int lines = 0;
-    int unknowns = 0;
+bool CourseworkMasyu::nodeRules(int x, int y) { //Sets rules for the grid and lines
+    int l = 0;
+    int u = 0;
     bool changed = false;
 
-    switch (grid[y][x].up) {
-        case LineStat::LINE: lines++; break;
-        case LineStat::UNKNOWN: unknowns++; break;
-        default: break;
-    }
-    switch (grid[y][x].right) {
-        case LineStat::LINE: lines++; break;
-        case LineStat::UNKNOWN: unknowns++; break;
-        default: break;
-    }
-    switch (grid[y][x].down) {
-        case LineStat::LINE: lines++; break;
-        case LineStat::UNKNOWN: unknowns++; break;
-        default: break;
-    }
-    switch (grid[y][x].left) {
-        case LineStat::LINE: lines++; break;
-        case LineStat::UNKNOWN: unknowns++; break;
-        default: break;
-    }
+    if (grid[y][x].up == LineStat::LINE) l++;
+    else if (grid[y][x].up == LineStat::UNKNOWN) u++;
+    if (grid[y][x].right == LineStat::LINE) l++;
+    else if (grid[y][x].right == LineStat::UNKNOWN) u++;
+    if (grid[y][x].down == LineStat::LINE) l++;
+    else if (grid[y][x].down == LineStat::UNKNOWN) u++;
+    if (grid[y][x].left == LineStat::LINE) l++;
+    else if (grid[y][x].left == LineStat::UNKNOWN) u++;
 
-    if (lines == 2 && unknowns > 0) {
+    if (l == 2 && u > 0) {
         if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
         if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
         if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
         if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
     }
-    if (lines == 1 && unknowns == 1) {
+    if (l == 1 && u == 1) {
         if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
         if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
         if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
         if (grid[y][x].left == LineStat::UNKNOWN) {  setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
     }
-    if (lines == 0 && unknowns == 1) {
+    if (l == 0 && u == 1) {
         if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
         if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
         if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
         if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
     }
-    if (grid[y][x].circle != CircleType::EMPTY) {
-        if (lines + unknowns == 2 && unknowns > 0) {
+    if (grid[y][x].circle == CircleType::EMPTY) {
+        if (l + u == 2 && u > 0) {
             if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
             if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
             if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
@@ -195,127 +183,104 @@ bool CourseworkMasyu::nodeRules(int x, int y) {
     return changed;
 }
 
-bool CourseworkMasyu::blackRules(int x, int y) {
+bool CourseworkMasyu::blackRules(int x, int y) { //Sets rules for black circles
     bool changed = false;
+
     if (grid[y][x].up == LineStat::UNKNOWN) {
-        if (!ifCoordValid(x, y-1) || grid[y-1][x].up == LineStat::EMPTY) {
-            setLineStatus(x, y, Direction::UP, LineStat::EMPTY);
-            changed = true;
-        }
+        if (!ifCoordValid(x, y-1) || grid[y-1][x].up == LineStat::EMPTY) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
     }
     if (grid[y][x].right == LineStat::UNKNOWN) {
-        if (!ifCoordValid(x+1, y) || grid[y][x+1].right == LineStat::EMPTY) {
-            setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY);
-            changed = true;
-        }
+        if (!ifCoordValid(x+1, y) || grid[y][x+1].right == LineStat::EMPTY) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
     }
     if (grid[y][x].down == LineStat::UNKNOWN) {
-        if (!ifCoordValid(x, y+1) || grid[y+1][x].down == LineStat::EMPTY) {
-            setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY);
-            changed = true;
-        }
+        if (!ifCoordValid(x, y+1) || grid[y+1][x].down == LineStat::EMPTY) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
     }
     if (grid[y][x].left == LineStat::UNKNOWN) {
-        if (!ifCoordValid(x-1, y) || grid[y][x-1].left == LineStat::EMPTY) {
-            setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY);
-            changed = true;
-        }
-    }
-    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
-    if (grid[y][x].right == LineStat::LINE && grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
-    if (grid[y][x].down == LineStat::LINE && grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
-    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
-
-    if (grid[y][x].up == LineStat::LINE && ifCoordValid(x, y-1)) {
-        if (grid[y-1][x].up == LineStat::UNKNOWN) {
-            setLineStatus(x, y-1, Direction::UP, LineStat::LINE);
-            changed = true;
-        }
-    }
-    if (grid[y][x].right == LineStat::LINE && ifCoordValid(x+1, y)) {
-        if (grid[y][x+1].right == LineStat::UNKNOWN) {
-            setLineStatus(x+1, y, Direction::RIGHT, LineStat::LINE);
-            changed = true;
-        }
-    }
-    if (grid[y][x].down == LineStat::LINE && ifCoordValid(x, y+1)) {
-        if (grid[y+1][x].down == LineStat::UNKNOWN) {
-            setLineStatus(x, y+1, Direction::DOWN, LineStat::LINE);
-            changed = true;
-        }
-    }
-    if (grid[y][x].left == LineStat::LINE && ifCoordValid(x-1, y)) {
-        if (grid[y][x-1].left == LineStat::UNKNOWN) {
-            setLineStatus(x-1, y, Direction::LEFT, LineStat::LINE);
-            changed = true;
-        }
+        if (!ifCoordValid(x-1, y) || grid[y][x-1].left == LineStat::EMPTY) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
     }
 
-    if (grid[y][x].up ==  LineStat::EMPTY && grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
-    if (grid[y][x].right ==  LineStat::EMPTY && grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
-    if (grid[y][x].down ==  LineStat::EMPTY && grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
-    if (grid[y][x].left ==  LineStat::EMPTY && grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+    int l = (grid[y][x].up == LineStat::LINE) + (grid[y][x].down == LineStat::LINE) + (grid[y][x].left == LineStat::LINE) + (grid[y][x].right == LineStat::LINE);
 
+    if (l > 0) {
+        if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].right == LineStat::LINE && grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].down == LineStat::LINE && grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+        if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+
+        if (grid[y][x].up == LineStat::LINE) {
+            if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::UNKNOWN) { setLineStatus(x, y-1, Direction::UP, LineStat::LINE); changed = true; }
+        }
+        if (grid[y][x].right == LineStat::LINE) {
+            if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::UNKNOWN) { setLineStatus(x+1, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+        }
+        if (grid[y][x].down == LineStat::LINE) {
+            if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::UNKNOWN) { setLineStatus(x, y+1, Direction::DOWN, LineStat::LINE); changed = true; }
+        }
+        if (grid[y][x].left == LineStat::LINE) {
+            if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::UNKNOWN) { setLineStatus(x-1, y, Direction::LEFT, LineStat::LINE); changed = true; }
+        }
+    } else {
+        bool ifVertical = (grid[y][x].up != LineStat::EMPTY || grid[y][x].down != LineStat::EMPTY);
+        bool ifHorizontal = (grid[y][x].left != LineStat::EMPTY || grid[y][x].right != LineStat::EMPTY);
+        if (!ifVertical || !ifHorizontal) {
+            if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+        }
+    }
     return changed;
 }
 
-bool CourseworkMasyu::whiteRules(int x, int y) {
+bool CourseworkMasyu::whiteRules(int x, int y) { //Sets rules for white circles
     bool changed = false;
-    if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE) {
-        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
-        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
-        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
-    } else if (grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) {
-        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
-        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
-    }
-    if (grid[y][x].up == LineStat::EMPTY || grid[y][x].down == LineStat::EMPTY) {
-        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
-        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
-    }
-    if (grid[y][x].left == LineStat::EMPTY || grid[y][x].right == LineStat::EMPTY) {
-        if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
-        if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
-        if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
-        if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
-    }
-    if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE) {
-        if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::LINE) {
-            if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::UNKNOWN) {
-                setLineStatus(x+1, y, Direction::RIGHT, LineStat::EMPTY);
-                changed = true;
+    int l = (grid[y][x].up == LineStat::LINE) + (grid[y][x].down == LineStat::LINE) + (grid[y][x].left == LineStat::LINE) + (grid[y][x].right == LineStat::LINE);
+
+    if (l > 0) {
+        if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE) {
+            if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::LINE); changed = true; }
+            if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::LINE); changed = true; }
+            if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+        } else if (grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) {
+            if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::LINE); changed = true; }
+            if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::LINE); changed = true; }
+        }
+        if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) {
+            if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::LINE) {
+                if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::UNKNOWN) { setLineStatus(x, y+1, Direction::DOWN, LineStat::EMPTY); changed = true; }
+            }
+            if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::LINE) {
+                if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::UNKNOWN) { setLineStatus(x, y-1, Direction::UP, LineStat::EMPTY); changed = true; }
             }
         }
-        if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::LINE) {
-            if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::UNKNOWN) {
-                setLineStatus(x-1, y, Direction::LEFT, LineStat::EMPTY);
-                changed = true;
+        if (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE) {
+            if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::LINE) {
+                if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::UNKNOWN) { setLineStatus(x+1, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
+            }
+            if (ifCoordValid(x+1, y) && grid[y][x+1].right == LineStat::LINE) {
+                if (ifCoordValid(x-1, y) && grid[y][x-1].left == LineStat::UNKNOWN) { setLineStatus(x-1, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
             }
         }
-    }
-    if (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) {
-        if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::LINE) {
-            if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::UNKNOWN) {
-                setLineStatus(x, y+1, Direction::DOWN, LineStat::EMPTY);
-                changed = true;
-            }
+    } else {
+        bool ifVertical = (grid[y][x].up != LineStat::EMPTY && grid[y][x].down != LineStat::EMPTY);
+        bool ifHorizontal = (grid[y][x].left != LineStat::EMPTY && grid[y][x].right != LineStat::EMPTY);
+
+        if (!ifVertical) {
+            if (grid[y][x].up == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::UP, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].down == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::DOWN, LineStat::EMPTY); changed = true; }
         }
-        if (ifCoordValid(x, y+1) && grid[y+1][x].down == LineStat::LINE) {
-            if (ifCoordValid(x, y-1) && grid[y-1][x].up == LineStat::UNKNOWN) {
-                setLineStatus(x, y-1, Direction::UP, LineStat::EMPTY);
-                changed = true;
-            }
+        if (!ifHorizontal) {
+            if (grid[y][x].left == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::LEFT, LineStat::EMPTY); changed = true; }
+            if (grid[y][x].right == LineStat::UNKNOWN) { setLineStatus(x, y, Direction::RIGHT, LineStat::EMPTY); changed = true; }
         }
     }
     return changed;
 }
 
-void CourseworkMasyu::applyRules() {
+void CourseworkMasyu::applyRules() { //Applying all grid rules
     bool changed = true;
     while (changed) {
         changed = false;
@@ -333,123 +298,100 @@ void CourseworkMasyu::applyRules() {
     }
 }
 
-bool CourseworkMasyu::solve() {
+bool CourseworkMasyu::solve() { //"Start button"
     return backtrack();
 }
 
-bool CourseworkMasyu::ifValid() const {
+bool CourseworkMasyu::ifValid() const { //Checks if grid is follows current rules and if it's solvable
     for (int  y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            int l = 0;
-            int u = 0;
-
-            if (grid[y][x].up == LineStat::LINE) {
-                l++;
-            } else if (grid[y][x].up == LineStat::UNKNOWN) {
-                u++;
-            }
-            if (grid[y][x].right == LineStat::LINE) {
-                l++;
-            } else if (grid[y][x].right == LineStat::UNKNOWN) {
-                u++;
-            }
-            if (grid[y][x].down == LineStat::LINE) {
-                l++;
-            } else if (grid[y][x].down == LineStat::UNKNOWN) {
-                u++;
-            }
-            if (grid[y][x].left == LineStat::LINE) {
-                l++;
-            } else if (grid[y][x].left == LineStat::UNKNOWN) {
-                u++;
-            }
+            int l = 0, u = 0;
+            if (grid[y][x].up == LineStat::LINE) l++;
+            else if (grid[y][x].up == LineStat::UNKNOWN) u++;
+            if (grid[y][x].right == LineStat::LINE) l++;
+            else if (grid[y][x].right == LineStat::UNKNOWN) u++;
+            if (grid[y][x].down == LineStat::LINE) l++;
+            else if (grid[y][x].down == LineStat::UNKNOWN) u++;
+            if (grid[y][x].left == LineStat::LINE) l++;
+            else if (grid[y][x].left == LineStat::UNKNOWN) u++;
 
             if (l > 2) return false;
             if (l == 1 && u == 0) return false;
-            if (grid[y][x].circle != CircleType::EMPTY) {
+            if (grid[y][x].circle == CircleType::EMPTY) {
                 if (l + u < 2) return false;
             }
-
             if (l == 2) {
                 bool strt = (grid[y][x].up == LineStat::LINE && grid[y][x].down == LineStat::LINE) || (grid[y][x].left == LineStat::LINE && grid[y][x].right == LineStat::LINE);
                 if (grid[y][x].circle == CircleType::WHITE && !strt) return false;
                 if (grid[y][x].circle == CircleType::BLACK && strt) return false;
+                if (grid[y][x].circle == CircleType::BLACK) {
+                    if (grid[y][x].up == LineStat::LINE && (!ifCoordValid(x, y-1) || grid[y-1][x].up == LineStat::EMPTY)) return false;
+                    if (grid[y][x].right == LineStat::LINE && (!ifCoordValid(x+1, y) || grid[y][x+1].right == LineStat::EMPTY)) return false;
+                    if (grid[y][x].down == LineStat::LINE && (!ifCoordValid(x, y+1) || grid[y+1][x].down == LineStat::EMPTY)) return false;
+                    if (grid[y][x].left == LineStat::LINE && (!ifCoordValid(x-1, y) || grid[y][x-1].left == LineStat::EMPTY)) return false;
+                }
             }
         }
     }
-
     return true;
 }
 
-void CourseworkMasyu::saveState() {
+void CourseworkMasyu::saveState() { //Saves progress in std::vector<std::vector<std::vector<Node>>> history; (part of backtrack)
     history.push_back(grid);
 }
 
-void CourseworkMasyu::restoreState() {
+void CourseworkMasyu::restoreState() { //Restores progress (part of backtrack)
     grid = history.back();
     history.pop_back();
 }
 
-bool CourseworkMasyu::ifLoopComplete() const {
-    int cir = 0;
+bool CourseworkMasyu::ifLoopComplete() const { //Checking if loop is complete
+    int empties = 0;
     int cellWithLine = 0;
-    int sX = -1;
-    int sY = -1;
-    int currX = -1;
-    int currY = -1;
-    int pathLen = 0;
-    int cirCount = 0;
-    bool found = false;
-    bool ifFirstStep = true;
-    Direction cameFrom = Direction::NONE;
+    int sX = -1, sY = -1;
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            if (grid[y][x].circle == CircleType::WHITE || grid[y][x].circle == CircleType::BLACK) cir++;
-            if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE || grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) cellWithLine++;
-        }
-    }
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+            if (grid[y][x].circle == CircleType::EMPTY) empties++;
             if (grid[y][x].up == LineStat::LINE || grid[y][x].down == LineStat::LINE || grid[y][x].left == LineStat::LINE || grid[y][x].right == LineStat::LINE) {
-                sX = x;
-                sY = y;
-                found = true;
-                break;
+                cellWithLine++;
+                if (sX == -1) { sX = x; sY = y; }
             }
         }
-        if (found) break;
     }
     if (sX == -1 || sY == -1) return false;
 
-    currX = sX;
-    currY = sY;
+    int currX = sX, currY = sY;
+    int pathLen = 0;
+    int emptiesVisited = 0;
+    bool ifFirstStep = true;
+    Direction cameFrom = Direction::NONE;
+
     while (true) {
         pathLen++;
-        if (grid[currY][currX].circle != CircleType::EMPTY) cirCount++;
+        if (grid[currY][currX].circle == CircleType::EMPTY) emptiesVisited++;
+
         if (grid[currY][currX].up == LineStat::LINE && (ifFirstStep || cameFrom != Direction::UP)) {
-            currY = currY-1;
-            cameFrom = Direction::DOWN;
+            currY = currY-1; cameFrom = Direction::DOWN;
         } else if (grid[currY][currX].down == LineStat::LINE && (ifFirstStep || cameFrom != Direction::DOWN)) {
-            currY = currY+1;
-            cameFrom = Direction::UP;
+            currY = currY+1; cameFrom = Direction::UP;
         } else if (grid[currY][currX].right == LineStat::LINE && (ifFirstStep || cameFrom != Direction::RIGHT)) {
-            currX = currX+1;
-            cameFrom = Direction::LEFT;
+            currX = currX+1; cameFrom = Direction::LEFT;
         } else if (grid[currY][currX].left == LineStat::LINE && (ifFirstStep || cameFrom != Direction::LEFT)) {
-            currX = currX-1;
-            cameFrom = Direction::RIGHT;
+            currX = currX-1; cameFrom = Direction::RIGHT;
         } else {
             return false;
         }
+
         ifFirstStep = false;
         if (currX == sX && currY == sY) break;
     }
-    if (pathLen != cellWithLine || cirCount != cir) return false;
+    if (pathLen != cellWithLine || emptiesVisited != empties) return false;
+
     return true;
 }
 
-bool CourseworkMasyu::backtrack() {
+bool CourseworkMasyu::backtrack() { //Finding correct path (backtracking)
     applyRules();
     if (!ifValid()) return false;
     if (ifLoopComplete()) return true;
@@ -508,14 +450,11 @@ bool CourseworkMasyu::backtrack() {
 }
 
 int main() {
-    int w = 14;
-    int h = 10;
+    int w = 14, h = 10;
     CourseworkMasyu field1(w, h);
-    CourseworkMasyu field2(w, h);
-    CourseworkMasyu field3(w, h);
 
     cout << "Welcome to the Masyu crossword solver!" << endl;
-    //Field #1
+    //Field #1 (Example #1 from the task)
     field1.setCircleType(4, 0, CircleType::WHITE);
     field1.setCircleType(7, 0, CircleType::BLACK);
     field1.setCircleType(2, 2, CircleType::WHITE);
@@ -542,125 +481,102 @@ int main() {
     field1.setCircleType(2, 9, CircleType::WHITE);
     field1.setCircleType(11, 9, CircleType::WHITE);
 
-    //Field #2
-    field2.setCircleType(2, 0, CircleType::WHITE);
-    field2.setCircleType(4, 0, CircleType::BLACK);
-    field2.setCircleType(8, 0, CircleType::BLACK);
-    field2.setCircleType(10, 0, CircleType::WHITE);
-    field2.setCircleType(1, 1, CircleType::WHITE);
-    field2.setCircleType(6, 1, CircleType::WHITE);
-    field2.setCircleType(11, 1, CircleType::BLACK);
-    field2.setCircleType(12, 1, CircleType::WHITE);
-    field2.setCircleType(1, 2, CircleType::BLACK);
-    field2.setCircleType(6, 2, CircleType::WHITE);
-    field2.setCircleType(8, 2, CircleType::BLACK);
-    field2.setCircleType(5, 3, CircleType::WHITE);
-    field2.setCircleType(7, 3, CircleType::WHITE);
-    field2.setCircleType(8, 3, CircleType::BLACK);
-    field2.setCircleType(10, 3, CircleType::WHITE);
-    field2.setCircleType(11, 3, CircleType::BLACK);
-    field2.setCircleType(0, 4, CircleType::WHITE);
-    field2.setCircleType(1, 4, CircleType::WHITE);
-    field2.setCircleType(2, 4, CircleType::WHITE);
-    field2.setCircleType(5, 4, CircleType::WHITE);
-    field2.setCircleType(6, 4, CircleType::WHITE);
-    field2.setCircleType(2, 5, CircleType::WHITE);
-    field2.setCircleType(7, 5, CircleType::WHITE);
-    field2.setCircleType(8, 5, CircleType::WHITE);
-    field2.setCircleType(11, 5, CircleType::WHITE);
-    field2.setCircleType(13, 5, CircleType::BLACK);
-    field2.setCircleType(1, 6, CircleType::WHITE);
+    w = 7;
+    h = 7;
+    CourseworkMasyu field2(w, h);
+    //Field #2 (Randomly generated)
+    field2.setCircleType(3, 5, CircleType::WHITE);
+    field2.setCircleType(6, 0, CircleType::BLACK);
+    field2.setCircleType(6, 6, CircleType::BLACK);
+    field2.setCircleType(0, 6, CircleType::BLACK);
+    field2.setCircleType(6, 3, CircleType::WHITE);
     field2.setCircleType(3, 6, CircleType::WHITE);
-    field2.setCircleType(4, 6, CircleType::WHITE);
-    field2.setCircleType(7, 6, CircleType::WHITE);
-    field2.setCircleType(8, 6, CircleType::BLACK);
-    field2.setCircleType(11, 6, CircleType::WHITE);
-    field2.setCircleType(13, 6, CircleType::WHITE);
-    field2.setCircleType(2, 7, CircleType::WHITE);
-    field2.setCircleType(10, 7, CircleType::WHITE);
-    field2.setCircleType(12, 7, CircleType::WHITE);
-    field2.setCircleType(2, 8, CircleType::WHITE);
-    field2.setCircleType(3, 8, CircleType::WHITE);
-    field2.setCircleType(5, 9, CircleType::WHITE);
-    field2.setCircleType(6, 9, CircleType::BLACK);
-    field2.setCircleType(9, 9, CircleType::BLACK);
-    field2.setCircleType(12, 9, CircleType::WHITE);
+    field2.setCircleType(5, 5, CircleType::BLACK);
+    field2.setCircleType(3, 3, CircleType::BLACK);
+    field2.setCircleType(3, 0, CircleType::WHITE);
+    field2.setCircleType(0, 4, CircleType::WHITE);
 
-    //Field #3
-    field3.setCircleType(5, 0, CircleType::WHITE);
-    field3.setCircleType(10, 0, CircleType::BLACK);
-    field3.setCircleType(0, 1, CircleType::WHITE);
-    field3.setCircleType(1, 1, CircleType::WHITE);
+    field2.setCircleType(3, 1, CircleType::WHITE);
+
+    w = 10;
+    h = 10;
+    CourseworkMasyu field3(w, h);
+    //Field #3 (Randomly generated)
+    field3.setCircleType(9, 0, CircleType::BLACK);
+    field3.setCircleType(4, 3, CircleType::WHITE);
+    field3.setCircleType(9, 9, CircleType::BLACK);
     field3.setCircleType(5, 1, CircleType::WHITE);
-    field3.setCircleType(8, 1, CircleType::WHITE);
-    field3.setCircleType(9, 1, CircleType::WHITE);
-    field3.setCircleType(2, 2, CircleType::WHITE);
-    field3.setCircleType(11, 2, CircleType::WHITE);
-    field3.setCircleType(13, 2, CircleType::WHITE);
-    field3.setCircleType(2, 3, CircleType::WHITE);
-    field3.setCircleType(5, 3, CircleType::WHITE);
-    field3.setCircleType(6, 3, CircleType::WHITE);
-    field3.setCircleType(9, 3, CircleType::WHITE);
-    field3.setCircleType(0, 4, CircleType::WHITE);
-    field3.setCircleType(2, 4, CircleType::WHITE);
-    field3.setCircleType(11, 4, CircleType::BLACK);
-    field3.setCircleType(9, 5, CircleType::BLACK);
-    field3.setCircleType(10, 5, CircleType::BLACK);
-    field3.setCircleType(2, 6, CircleType::WHITE);
-    field3.setCircleType(4, 6, CircleType::BLACK);
-    field3.setCircleType(6, 6, CircleType::BLACK);
-    field3.setCircleType(7, 6, CircleType::WHITE);
-    field3.setCircleType(1, 7, CircleType::WHITE);
-    field3.setCircleType(4, 7, CircleType::BLACK);
-    field3.setCircleType(2, 8, CircleType::WHITE);
-    field3.setCircleType(12, 8, CircleType::BLACK);
+    field3.setCircleType(8, 5, CircleType::WHITE);
+    field3.setCircleType(5, 8, CircleType::WHITE);
     field3.setCircleType(0, 9, CircleType::BLACK);
-    field3.setCircleType(6, 9, CircleType::WHITE);
-    field3.setCircleType(8, 9, CircleType::BLACK);
-    field3.setCircleType(11, 9, CircleType::WHITE);
+    field3.setCircleType(8, 1, CircleType::BLACK);
+    field3.setCircleType(5, 2, CircleType::WHITE);
+    field3.setCircleType(7, 5, CircleType::WHITE);
+    field3.setCircleType(8, 8, CircleType::BLACK);
+    field3.setCircleType(1, 8, CircleType::BLACK);
+    field3.setCircleType(5, 0, CircleType::WHITE);
+    field3.setCircleType(9, 5, CircleType::WHITE);
+    field3.setCircleType(5, 9, CircleType::WHITE);
+    field3.setCircleType(0, 0, CircleType::BLACK);
+    field3.setCircleType(2, 2, CircleType::WHITE);
+    field3.setCircleType(1, 5, CircleType::WHITE);
+    field3.setCircleType(3, 1, CircleType::WHITE);
+    field3.setCircleType(2, 7, CircleType::WHITE);
 
     cout << "Select field:" << endl;
-    char ch;
+    int ch;
     while (true) {
         cout << "1. Field #1\n2. Field #2\n3. Field #3\n4. Show all.\n5.Exit." << endl;
         cout << "Enter: ";
         std::cin >> ch;
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        //Input check
+        if (std::cin.fail() || std::cin.peek() != '\n') {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            cout << "Please! Enter a single number!\n" << endl;
+            continue;
+        }
         switch (ch) {
-            case '1':
+            case 1:
+                cout << "Solving field #1..." << endl;
                 cout << "Field #1:" << endl;
                 field1.solve();
                 field1.printToConsole();
                 break;
-            case '2':
+            case 2:
+                cout << "Solving field #2..." << endl;
                 cout << "Field #2:" << endl;
                 field2.solve();
                 field2.printToConsole();
                 break;
-            case '3':
+            case 3:
+                cout << "Solving field #3..." << endl;
                 cout << "Field #3:" << endl;
                 field3.solve();
                 field3.printToConsole();
                 break;
-            case '4':
+            case 4:
+                cout << "Solving field #1..." << endl;
                 cout << "Field #1:" << endl;
                 field1.solve();
                 field1.printToConsole();
                 cout << "\n" << endl;
+                cout << "Solving field #2..." << endl;
                 cout << "Field #2:" << endl;
                 field2.solve();
                 field2.printToConsole();
                 cout << "\n" << endl;
+                cout << "Solving field #3..." << endl;
                 cout << "Field #3:" << endl;
                 field3.solve();
                 field3.printToConsole();
                 break;
-            case '5':
+            case 5:
+                cout << "Thanks for using! Good luck." << endl;
                 return 0;
             default:
-                cout << "Error! Choose between 1, 2, 3, 4 and 5!" << endl;
+                cout << "Error! Choose between 1, 2, 3, 4 and 5!\n" << endl;
                 break;
         }
     }
-    return 0;
 }
