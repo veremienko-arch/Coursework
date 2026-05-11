@@ -1,3 +1,16 @@
+/* ----------------------------------------------------------------<Header>-
+Name: task31.cc
+Title: Masyu solver
+Group: TV-51
+Student: Veremiienko R. R.
+Written: 2026-05-09
+Revised: 2026-05-11
+Description: This program solves Masyu puzzle with some addition
+rules: line must pass trough all empty cells and it doesn't have to
+collect all circles. But, if line passes though a circle it
+must follow the rules.
+------------------------------------------------------------------</Header>-*/
+
 #include <iostream>
 #include <vector>
 #include <limits>
@@ -28,9 +41,8 @@ struct Node {
 class CourseworkMasyu {
 private:
     int width, height;
-    std::vector<std::vector<Node>> grid; //Grid graph
-    std::vector<std::vector<std::vector<Node>>> history; //History for rolling back grid version (needs for backtrack)
-    //Function prototypes
+    std::vector<std::vector<Node>> grid;
+    std::vector<std::vector<std::vector<Node>>> history;
     bool if_coord_valid(int x, int y) const;
     bool node_rules(int x, int y);
     bool black_rules(int x, int y);
@@ -51,7 +63,11 @@ public:
     void print_to_console() const;
 };
 
-CourseworkMasyu::CourseworkMasyu(int x, int y) { //Constructor for a grid size
+/* ---------------------------------------------------------------------[<]-
+Function: CourseworkMasyu
+Synopsis: Constructor for a grid size
+---------------------------------------------------------------------[>]-*/
+CourseworkMasyu::CourseworkMasyu(int x, int y) {
     width = x;
     height = y;
     grid.resize(height, std::vector<Node>(width));
@@ -66,11 +82,19 @@ CourseworkMasyu::CourseworkMasyu(int x, int y) { //Constructor for a grid size
     }
 }
 
-void CourseworkMasyu::set_circle_type(int x, int y, CircleType type) { //Correctly and safely sets circle type
+/* ---------------------------------------------------------------------[<]-
+Function: set_circle_type
+Synopsis: Correctly and safely sets circle type
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::set_circle_type(int x, int y, CircleType type) {
     grid[y][x].circle = type;
 }
 
-void CourseworkMasyu::print_to_console() const { //Prints grid to a console
+/* ---------------------------------------------------------------------[<]-
+Function: print_to_console
+Synopsis: Prints grid to a console
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::print_to_console() const {
     cout << std::string(width * 4 - 3, '-') << endl;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -102,11 +126,19 @@ void CourseworkMasyu::print_to_console() const { //Prints grid to a console
     cout << std::string(width * 4 - 3, '-') << endl;
 }
 
-bool CourseworkMasyu::if_coord_valid(int x, int y) const { //Checks if coords is valid
+/* ---------------------------------------------------------------------[<]-
+Function: if_coord_valid
+Synopsis: Checks if coords is valid
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::if_coord_valid(int x, int y) const {
     return x >= 0 && x < width && y >= 0 && y < height;
 }
 
-void CourseworkMasyu::set_line_stat(int x, int y, Direction dir, LineStat status) { //Correctly and safely sets line status
+/* ---------------------------------------------------------------------[<]-
+Function: set_line_stat
+Synopsis: Correctly and safely sets line status
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::set_line_stat(int x, int y, Direction dir, LineStat status) {
     if (!if_coord_valid(x, y)) return;
 
     switch (dir) {
@@ -139,7 +171,11 @@ void CourseworkMasyu::set_line_stat(int x, int y, Direction dir, LineStat status
     }
 }
 
-bool CourseworkMasyu::node_rules(int x, int y) { //Sets rules for the grid and lines
+/* ---------------------------------------------------------------------[<]-
+Function: node_rules
+Synopsis: Sets rules for the grid and lines
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::node_rules(int x, int y) {
     int l = 0;
     int u = 0;
     bool changed = false;
@@ -187,7 +223,11 @@ bool CourseworkMasyu::node_rules(int x, int y) { //Sets rules for the grid and l
     return changed;
 }
 
-bool CourseworkMasyu::black_rules(int x, int y) { //Sets rules for black circles
+/* ---------------------------------------------------------------------[<]-
+Function: black_rules
+Synopsis: Sets rules for black circles
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::black_rules(int x, int y) {
     bool changed = false;
 
     if (grid[y][x].up == LineStat::UNKNOWN) {
@@ -236,7 +276,11 @@ bool CourseworkMasyu::black_rules(int x, int y) { //Sets rules for black circles
     return changed;
 }
 
-bool CourseworkMasyu::white_rules(int x, int y) { //Sets rules for white circles
+/* ---------------------------------------------------------------------[<]-
+Function: white_rules
+Synopsis: Sets rules for white circles
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::white_rules(int x, int y) {
     bool changed = false;
     int l = (grid[y][x].up == LineStat::LINE) + (grid[y][x].down == LineStat::LINE) + (grid[y][x].left == LineStat::LINE) + (grid[y][x].right == LineStat::LINE);
 
@@ -284,7 +328,11 @@ bool CourseworkMasyu::white_rules(int x, int y) { //Sets rules for white circles
     return changed;
 }
 
-void CourseworkMasyu::apply_rules() { //Applying all grid rules
+/* ---------------------------------------------------------------------[<]-
+Function: apply_rules
+Synopsis: Applying all grid rules
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::apply_rules() {
     bool changed = true;
     while (changed) {
         changed = false;
@@ -302,11 +350,19 @@ void CourseworkMasyu::apply_rules() { //Applying all grid rules
     }
 }
 
-bool CourseworkMasyu::solve() { //"Start button"
+/* ---------------------------------------------------------------------[<]-
+Function: solve
+Synopsis: "Start button"
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::solve() {
     return backtrack();
 }
 
-bool CourseworkMasyu::if_valid() const { //Checks if grid is follows current rules and if it's solvable
+/* ---------------------------------------------------------------------[<]-
+Function: if_valid
+Synopsis: Checks if grid is follows current rules and if it's solvable
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::if_valid() const {
     for (int  y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int l = 0, u = 0;
@@ -344,16 +400,30 @@ bool CourseworkMasyu::if_valid() const { //Checks if grid is follows current rul
     return true;
 }
 
-void CourseworkMasyu::save_state() { //Saves progress in std::vector<std::vector<std::vector<Node>>> history; (part of backtrack)
+/* ---------------------------------------------------------------------[<]-
+Function: save_state
+Synopsis: CSaves progress in
+          std::vector<std::vector<std::vector<Node>>> history;
+          (part of backtrack)
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::save_state() {
     history.push_back(grid);
 }
 
-void CourseworkMasyu::restore_state() { //Restores progress (part of backtrack)
+/* ---------------------------------------------------------------------[<]-
+Function: restore_state
+Synopsis: Restores progress (part of backtrack)
+---------------------------------------------------------------------[>]-*/
+void CourseworkMasyu::restore_state() {
     grid = history.back();
     history.pop_back();
 }
 
-bool CourseworkMasyu::if_loop_complete() const { //Checking if loop is complete
+/* ---------------------------------------------------------------------[<]-
+Function: if_loop_complete
+Synopsis: Checking if loop is complete
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::if_loop_complete() const {
     int empties = 0;
     int cell_with_line = 0;
     int s_x = -1, s_y = -1;
@@ -399,7 +469,11 @@ bool CourseworkMasyu::if_loop_complete() const { //Checking if loop is complete
     return true;
 }
 
-bool CourseworkMasyu::backtrack() { //Finding correct path (backtracking)
+/* ---------------------------------------------------------------------[<]-
+Function: backtrack
+Synopsis: Finding correct path (backtracking)
+---------------------------------------------------------------------[>]-*/
+bool CourseworkMasyu::backtrack() {
     apply_rules();
     if (!if_valid()) return false;
     if (if_loop_complete()) return true;
@@ -462,12 +536,14 @@ bool CourseworkMasyu::backtrack() { //Finding correct path (backtracking)
     return false;
 }
 
+/*---------------------------------------------------------------------[<]-
+The main method runs all tests functions.
+---------------------------------------------------------------------[>]-*/
 int main() {
     int w = 14, h = 10;
     CourseworkMasyu field1(w, h);
 
     cout << "Welcome to the Masyu crossword solver!" << endl;
-    //Field #1 (Example #1 from the task)
     field1.set_circle_type(4, 0, CircleType::WHITE);
     field1.set_circle_type(7, 0, CircleType::BLACK);
     field1.set_circle_type(2, 2, CircleType::WHITE);
@@ -497,7 +573,6 @@ int main() {
     w = 7;
     h = 7;
     CourseworkMasyu field2(w, h);
-    //Field #2 (Randomly generated)
     field2.set_circle_type(3, 5, CircleType::WHITE);
     field2.set_circle_type(6, 0, CircleType::BLACK);
     field2.set_circle_type(6, 6, CircleType::BLACK);
@@ -513,7 +588,6 @@ int main() {
     w = 10;
     h = 10;
     CourseworkMasyu field3(w, h);
-    //Field #3 (Randomly generated)
     field3.set_circle_type(9, 0, CircleType::BLACK);
     field3.set_circle_type(4, 3, CircleType::WHITE);
     field3.set_circle_type(9, 9, CircleType::BLACK);
@@ -541,7 +615,6 @@ int main() {
         cout << "1. Field #1\n2. Field #2\n3. Field #3\n4. Show all.\n5.Exit." << endl;
         cout << "Enter: ";
         std::cin >> ch;
-        //Input check
         if (std::cin.fail() || std::cin.peek() != '\n') {
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
